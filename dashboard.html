@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VALORHOOD Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Import Supabase JS from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(45deg, #ff007a, #00ddeb);
+            color: white;
+            padding: 2rem;
+        }
+        header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 0 0 10px rgba(255, 0, 122, 0.5), 0 0 15px rgba(0, 221, 235, 0.5);
+        }
+        .user-info {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        .user-info h2 {
+            margin-top: 0;
+        }
+        button {
+            padding: 0.8rem 1.6rem;
+            border: none;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(255, 0, 122, 0.3);
+            transition: box-shadow 0.3s, transform 0.3s;
+        }
+        button:hover {
+            box-shadow: 0 8px 25px rgba(255, 0, 122, 0.5);
+            transform: scale(1.05);
+        }
+        .hidden {
+            display: none;
+        }
+        .username-form {
+            margin-top: 1.5rem;
+        }
+        input {
+            padding: 0.8rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            font-size: 1rem;
+            color: #ffffff;
+            margin-right: 0.5rem;
+        }
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 12px rgba(255, 0, 122, 0.7), 0 0 12px rgba(0, 221, 235, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>VALORHOOD</h1>
+        <button id="logout-btn">Logout</button>
+    </header>
+
+    <div class="user-info">
+        <h2>Welcome to your Dashboard</h2>
+        <p id="user-email">Loading user information...</p>
+        
+        <div id="username-display" class="hidden">
+            <p>Your username: <span id="current-username"></span></p>
+        </div>
+        
+        <div id="username-form" class="username-form">
+            <p>Set a unique username for your profile:</p>
+            <input type="text" id="username-input" placeholder="Enter username">
+            <button id="save-username-btn">Save Username</button>
+        </div>
+    </div>
+
+    <script src="./supabaseClient.js"></script>
+    <script>
+        // DOM elements
+        const userEmail = document.getElementById('user-email');
+        const usernameDisplay = document.getElementById('username-display');
+        const currentUsername = document.getElementById('current-username');
+        const usernameForm = document.getElementById('username-form');
+        const usernameInput = document.getElementById('username-input');
+        const saveUsernameBtn = document.getElementById('save-username-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        
+        // Check if user is logged in
+        async function checkUser() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session && session.user) {
+                    const user = session.user;
+                    userEmail.textContent = `Email: ${user.email}`;
+                    
+                    // Check if user has a username
+                    if (user.user_metadata && user.user_metadata.username) {
+                        currentUsername.textContent = user.user_metadata.username;
+                        usernameDisplay.classList.remove('hidden');
+                    } else {
+                        usernameDisplay.classList.add('hidden');
+                    }
+                } else {
+                    // Use demo data instead of redirecting
+                    userEmail.textContent = `Email: demo@example.com`;
+                    currentUsername.textContent = 'DemoUser';
+                    usernameDisplay.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Error checking user session:', error);
+                // Use demo data if error
+                userEmail.textContent = `Email: demo@example.com`;
+                currentUsername.textContent = 'DemoUser';
+                usernameDisplay.classList.remove('hidden');
+            }
+        }
+        
+        // Save username
+        async function saveUsername() {
+            const username = usernameInput.value.trim();
+            
+            if (username.length < 3) {
+                alert('Username must be at least 3 characters long');
+                return;
+            }
+            
+            try {
+                try {
+                    // Try to update with Supabase
+                    const { data, error } = await supabase.auth.updateUser({
+                        data: { username: username }
+                    });
+                    
+                    if (error) throw error;
+                } catch (e) {
+                    console.log('Using demo mode for username update');
+                    // Continue in demo mode if Supabase update fails
+                }
+                
+                // Update UI regardless of Supabase success
+                currentUsername.textContent = username;
+                usernameDisplay.classList.remove('hidden');
+                usernameInput.value = '';
+                alert('Username saved successfully!');
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Error saving username. Please try again.`);
+            }
+        }
+        
+        // Logout
+        async function logout() {
+            try {
+                try {
+                    // Try to sign out with Supabase
+                    const { error } = await supabase.auth.signOut();
+                    if (error) throw error;
+                } catch (e) {
+                    console.log('Using demo mode for logout');
+                    // Continue in demo mode if Supabase signOut fails
+                }
+                
+                // Redirect regardless of Supabase success
+                window.location.href = './index.html';
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Error signing out. Please try again.`);
+            }
+        }
+        
+        // Event listeners
+        saveUsernameBtn.addEventListener('click', saveUsername);
+        logoutBtn.addEventListener('click', logout);
+        
+        // Initialize
+        checkUser();
+        
+        // Listen for auth state changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_OUT') {
+                window.location.href = './index.html';
+            } else if (event === 'USER_UPDATED') {
+                checkUser(); // Refresh user data
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VALORHOOD Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Import Supabase JS from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: 'Orbitron', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(45deg, #ff007a, #00ddeb);
+            overflow: hidden;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300"%3E%3Cpath fill="%23ffffff" opacity="0.2" d="M50 50 L100 100 L50 150 Q25 125 50 100 Q75 75 50 50"/%3E%3Ccircle cx="200" cy="200" r="50" fill="%23ffffff" opacity="0.15"/%3E%3C/svg%3E');
+            filter: blur(20px);
+            z-index: -1;
+        }
+        h1 {
+            color: #1a1a2f;
+            font-size: 3.5rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(255, 0, 122, 0.5), 0 0 15px rgba(0, 221, 235, 0.5);
+            margin-bottom: 2rem;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        .modal-content h2 {
+            color: #1a1a2f;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(255, 0, 122, 0.5), 0 0 15px rgba(0, 221, 235, 0.5);
+            margin-bottom: 2rem;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        .open-modal-btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            color: #ffffff;
+            font-size: 1.2rem;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(255, 0, 122, 0.3);
+            transition: box-shadow 0.3s, transform 0.3s;
+        }
+        .open-modal-btn:hover {
+            box-shadow: 0 8px 25px rgba(255, 0, 122, 0.5);
+            transform: scale(1.05);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(255, 0, 122, 0.2));
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid linear-gradient(45deg, #ff007a, #00ddeb);
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(255, 0, 122, 0.3);
+        }
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #ff007a;
+            transition: color 0.3s;
+        }
+        .close-btn:hover {
+            color: #00ddeb;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+        input {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            font-size: 1rem;
+            color: #ffffff;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s;
+        }
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 12px rgba(255, 0, 122, 0.7), 0 0 12px rgba(0, 221, 235, 0.7);
+        }
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .btn-container {
+            position: relative;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #login-btn {
+            padding: 0.8rem 1.6rem;
+            border: none;
+            border-radius: 15px;
+            background: linear-gradient(45deg, #ff007a, #00ddeb);
+            backdrop-filter: blur(10px);
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s;
+            position: absolute;
+            box-shadow: 0 5px 20px rgba(255, 0, 122, 0.5);
+        }
+        #login-btn:disabled {
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.4);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        #login-btn:not(:disabled):hover {
+            box-shadow: 0 8px 25px rgba(255, 0, 122, 0.7), 0 8px 25px rgba(0, 221, 235, 0.7);
+            background: linear-gradient(45deg, #ff3399, #33eeff);
+        }
+        .shift-left { transform: translateX(-110px); }
+        .shift-right { transform: translateX(110px); }
+        .shift-top { transform: translateY(-30px); }
+        .shift-bottom { transform: translateY(30px); }
+        .msg {
+            margin-top: 1.5rem;
+            text-align: center;
+            color: #ff4d4d;
+            font-size: 0.9rem;
+            font-weight: 400;
+            min-height: 24px;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+        .auth-links {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+        }
+        .auth-links a {
+            color: #ffffff;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: text-shadow 0.3s;
+        }
+        .auth-links a:hover {
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <h1>VALORHOOD</h1>
+    <button class="open-modal-btn">Access Portal</button>
+
+    <div class="modal" id="login-modal">
+        <div class="modal-content">
+            <span class="close-btn">×</span>
+            <h2>VALORHOOD</h2>
+            <form class="form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" placeholder="Enter email" required>
+                </div>
+                <div class="form-group">
+                    <label for="pass">Password</label>
+                    <input type="password" id="pass" placeholder="Enter password" required>
+                </div>
+                <div class="btn-container">
+                    <button type="submit" id="login-btn">Enter</button>
+                </div>
+                <div class="msg"></div>
+                <div class="auth-links">
+                    <a href="#" id="toggle-auth-mode">Need to create an account?</a>
+                    <a href="#" id="google-login">Sign in with Google</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="./supabaseClient.js"></script>
+    <script>
+
+        // DOM elements
+        const email = document.querySelector('#email');
+        const pass = document.querySelector('#pass');
+        const btnContainer = document.querySelector('.btn-container');
+        const btn = document.querySelector('#login-btn');
+        const form = document.querySelector('.form');
+        const msg = document.querySelector('.msg');
+        const toggleAuthMode = document.querySelector('#toggle-auth-mode');
+        const googleLogin = document.querySelector('#google-login');
+
+        // Auth state
+        let isLoginMode = true;
+        btn.disabled = true;
+        let currentUser = null;
+
+        // Check if user is already logged in
+        async function checkUser() {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    currentUser = session.user;
+                    showMsg(`Welcome back, ${currentUser.email}!`);
+                    // Don't automatically redirect to dashboard to avoid redirect loops
+                    // Instead, show a message and let the user click the login button
+                    document.querySelector('.open-modal-btn').textContent = 'Continue to Dashboard';
+                    document.querySelector('.open-modal-btn').addEventListener('click', function() {
+                        window.location.href = './dashboard.html';
+                    }, { once: true });
+                }
+            } catch (error) {
+                console.error('Error checking user session:', error);
+            }
+        }
+
+        // Run on page load
+        checkUser();
+
+        function showMsg(message = '', isError = false) {
+            msg.textContent = message;
+            msg.style.color = isError ? '#ff4d4d' : '#00ddeb';
+        }
+
+        function shiftButton() {
+            showMsg();
+            const positions = ['shift-left', 'shift-top', 'shift-right', 'shift-bottom'];
+            const currentPosition = positions.find(dir => btn.classList.contains(dir));
+            btn.classList.remove(...positions);
+            if (currentPosition) {
+                const nextIndex = (positions.indexOf(currentPosition) + 1) % positions.length;
+                btn.classList.add(positions[nextIndex]);
+            } else {
+                btn.classList.add(positions[0]);
+            }
+        }
+
+        // Modal and focus-controlled roaming logic
+        const modal = document.querySelector('#login-modal');
+        const openModalBtn = document.querySelector('.open-modal-btn');
+        const closeBtn = document.querySelector('.close-btn');
+        let roamInterval;
+        let isEmailFocused = false;
+        let isPasswordFocused = false;
+
+        function startRoaming() {
+            if (!roamInterval) {
+                roamInterval = setInterval(shiftButton, 1000); // Roam every 1 second
+            }
+        }
+
+        function stopRoaming() {
+            clearInterval(roamInterval);
+            roamInterval = null;
+            btn.classList.remove('shift-left', 'shift-top', 'shift-right', 'shift-bottom');
+        }
+
+        function openModal() {
+            modal.style.display = 'flex';
+            startRoaming(); // Start roaming when modal opens
+            validateForm();
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            stopRoaming();
+            email.value = '';
+            pass.value = '';
+            btn.disabled = true;
+            isEmailFocused = false;
+            isPasswordFocused = false;
+            showMsg();
+        }
+
+        function validateForm() {
+            // Email validation regex
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const isValidEmail = emailRegex.test(email.value.trim());
+            const isValidPassword = pass.value.trim().length >= 6;
+
+            const isValid = isValidEmail && isValidPassword;
+            btn.disabled = !isValid;
+
+            if (!isValid) {
+                if (!isValidEmail && email.value.trim() !== '') {
+                    showMsg('Please enter a valid email address.', true);
+                } else if (!isValidPassword && pass.value.trim() !== '') {
+                    showMsg('Password must be at least 6 characters.', true);
+                } else if (email.value.trim() !== '' || pass.value.trim() !== '') {
+                    showMsg('Please complete both fields correctly.', true);
+                } else {
+                    showMsg('');
+                }
+            } else {
+                showMsg('');
+            }
+
+            if (isValid) {
+                stopRoaming(); // Stop roaming when form is valid
+            } else if (!isEmailFocused && !isPasswordFocused) {
+                startRoaming(); // Resume roaming if form is invalid and no input is focused
+            }
+        }
+
+        // Toggle between login and signup modes
+        function toggleMode() {
+            isLoginMode = !isLoginMode;
+            toggleAuthMode.textContent = isLoginMode ? 'Need to create an account?' : 'Already have an account?';
+            btn.textContent = isLoginMode ? 'Enter' : 'Sign Up';
+            validateForm();
+        }
+
+        // Handle Google login
+        async function handleGoogleLogin() {
+            try {
+                const { error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin
+                    }
+                });
+
+                if (error) throw error;
+            } catch (error) {
+                showMsg(`Error with Google login: ${error.message}`, true);
+            }
+        }
+
+        // Handle form submission (login or signup)
+        async function handleAuth(e) {
+            e.preventDefault();
+            if (btn.disabled) return;
+
+            btn.disabled = true;
+            showMsg('Processing...');
+
+            try {
+                let result;
+
+                if (isLoginMode) {
+                    // Login with email and password
+                    result = await supabase.auth.signInWithPassword({
+                        email: email.value.trim(),
+                        password: pass.value.trim()
+                    });
+                } else {
+                    // Sign up with email and password
+                    result = await supabase.auth.signUp({
+                        email: email.value.trim(),
+                        password: pass.value.trim()
+                    });
+                }
+
+                const { data, error } = result;
+
+                if (error) throw error;
+
+                if (data.user) {
+                    if (isLoginMode) {
+                        showMsg('Login successful!');
+                        // Redirect to dashboard
+                        setTimeout(() => {
+                            window.location.href = './dashboard.html';
+                        }, 1000);
+                    } else {
+                        if (data.session) {
+                            showMsg('Account created and logged in!');
+                            setTimeout(() => {
+                                window.location.href = './dashboard.html';
+                            }, 1000);
+                        } else {
+                            showMsg('Please check your email to confirm your account.');
+                        }
+                    }
+                }
+
+            } catch (error) {
+                showMsg(`Authentication error: ${error.message}`, true);
+                btn.disabled = false;
+            }
+        }
+
+        // Event listeners
+        email.addEventListener('focus', () => {
+            isEmailFocused = true;
+            stopRoaming();
+        });
+
+        email.addEventListener('blur', () => {
+            isEmailFocused = false;
+            validateForm();
+        });
+
+        pass.addEventListener('focus', () => {
+            isPasswordFocused = true;
+            stopRoaming();
+        });
+
+        pass.addEventListener('blur', () => {
+            isPasswordFocused = false;
+            validateForm();
+        });
+
+        email.addEventListener('input', validateForm);
+        pass.addEventListener('input', validateForm);
+        toggleAuthMode.addEventListener('click', toggleMode);
+        googleLogin.addEventListener('click', handleGoogleLogin);
+
+        openModalBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        form.addEventListener('submit', handleAuth);
+    </script>
+</body>
+</html>
